@@ -1,0 +1,73 @@
+# ---------------------------------------------------------------------------
+# AutoGestor DMS — despliegue con imagenes compiladas
+#
+#   docker compose -f docker-compose.prod.yml up --build -d
+#
+# A diferencia del entorno de desarrollo, aqui no se monta codigo del equipo:
+# todo queda dentro de las imagenes. La interfaz se sirve compilada con nginx.
+# ---------------------------------------------------------------------------
+
+name: autogestor-dms-prod
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?define MYSQL_ROOT_PASSWORD en el archivo .env}
+      MYSQL_DATABASE: ${DB_NAME:-autogestor_dms}
+      MYSQL_USER: ${DB_USER:-autogestor}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en el archivo .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - datos_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    # Sin puertos publicados: la base solo se alcanza desde la red interna.
+
+  backend:
+    build:
+      context: ./backend
+      target: produccion
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-autogestor_dms}
+      DB_USER: ${DB_USER:-autogestor}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PORT: 3001
+      SESSION_SECRET: ${SESSION_SECRET:?define SESSION_SECRET en el archivo .env}
+      SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-15}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+    ports:
+      - "${API_PUERTO_HOST:-3001}:3001"
+    volumes:
+      - fotos_vehiculos:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      target: produccion
+      args:
+        # Se incrusta al compilar: si la API vive en otro dominio, cambialo aqui.
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${WEB_PUERTO_HOST:-80}:80"
+
+volumes:
+  datos_mysql:
+  fotos_vehiculos:

@@ -1,0 +1,177 @@
+/* ---------------------------------------------------------------------------
+   AutoGestor DMS — fundamentos del sistema de diseño
+   Paleta sobria de concesionaria: grafito, azul acero y un solo acento.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Superficies */
+  --ground: #f2f4f7;
+  --surface: #ffffff;
+  --surface-alt: #f8fafc;
+  --line: #e3e7ed;
+  --line-fuerte: #cdd4de;
+
+  /* Texto */
+  --ink: #16202e;
+  --ink-medio: #475267;
+  --ink-suave: #737e92;
+
+  /* Marca */
+  --marca: #16365f;
+  --marca-fuerte: #0f2544;
+  --marca-suave: #eaf0f8;
+  --marca-borde: #c3d4ea;
+
+  /* Semánticos */
+  --exito: #106b46;
+  --exito-suave: #e5f4ec;
+  --aviso: #8a5a00;
+  --aviso-suave: #fdf3e0;
+  --error: #a63229;
+  --error-suave: #fbeceb;
+
+  /* Forma */
+  --radio-sm: 7px;
+  --radio: 11px;
+  --radio-lg: 16px;
+  --sombra-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --sombra: 0 1px 3px rgba(16, 24, 40, 0.07), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --sombra-lg: 0 12px 32px -8px rgba(16, 24, 40, 0.18);
+
+  --lateral: 252px;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--ground);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+
+p {
+  margin: 0;
+}
+
+/* Las cifras se alinean en columna en todas las tablas y tarjetas. */
+.tabla,
+.indicador-valor,
+.resumen-total,
+.derecha {
+  font-variant-numeric: tabular-nums;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line-fuerte);
+  border-radius: var(--radio-sm);
+  background: var(--surface);
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-suave);
+}
+
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover {
+  border-color: #aab4c2;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: none;
+  border-color: var(--marca);
+  box-shadow: 0 0 0 3px rgba(22, 54, 95, 0.14);
+}
+
+button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(22, 54, 95, 0.22);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--surface-alt);
+  color: var(--ink-suave);
+  cursor: not-allowed;
+}
+
+select {
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23737e92' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.icono {
+  flex: none;
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cfd6e0;
+  border: 3px solid var(--ground);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8c2d0;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}

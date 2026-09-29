@@ -1,0 +1,120 @@
+# ---------------------------------------------------------------------------
+# AutoGestor DMS — entorno de desarrollo completo
+#
+#   docker compose up
+#
+# Levanta la base de datos, la API y la interfaz. El codigo se monta desde el
+# equipo, asi que cualquier cambio se recarga solo: no hay que reconstruir.
+# ---------------------------------------------------------------------------
+
+name: autogestor-dms
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: autogestor-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_autogestor}
+      MYSQL_DATABASE: ${DB_NAME:-autogestor_dms}
+      MYSQL_USER: ${DB_USER:-autogestor}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-autogestor}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      # 3307 en el equipo: deja libre el 3306 por si ya hay un MySQL instalado.
+      - "${DB_PUERTO_HOST:-3307}:3306"
+    volumes:
+      - datos_mysql:/var/lib/mysql
+    healthcheck:
+      # La API no arranca hasta que MySQL acepta conexiones de verdad.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_autogestor}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+      target: desarrollo
+    container_name: autogestor-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-autogestor_dms}
+      DB_USER: ${DB_USER:-autogestor}
+      DB_PASSWORD: ${DB_PASSWORD:-autogestor}
+      PORT: 3001
+      SESSION_SECRET: ${SESSION_SECRET:-cambia-esta-llave-en-produccion}
+      SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-15}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      # RF-028: timbrado del CFDI 4.0. Sin usuario y contrasena el sistema
+      # trabaja en modo simulado, con folios fiscales ficticios.
+      FACTURAMA_SIMULADO: ${FACTURAMA_SIMULADO:-true}
+      FACTURAMA_ENTORNO: ${FACTURAMA_ENTORNO:-sandbox}
+      FACTURAMA_USUARIO: ${FACTURAMA_USUARIO:-}
+      FACTURAMA_PASSWORD: ${FACTURAMA_PASSWORD:-}
+      FACTURAMA_EMISOR_CP: ${FACTURAMA_EMISOR_CP:-86991}
+      FACTURAMA_SERIE: ${FACTURAMA_SERIE:-}
+    ports:
+      - "${API_PUERTO_HOST:-3001}:3001"
+    volumes:
+      - ./backend:/app
+      # Volumen propio para node_modules: conserva las dependencias instaladas
+      # en la imagen (compiladas para Linux) en lugar de las del equipo.
+      - modulos_backend:/app/node_modules
+      - fotos_vehiculos:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      target: desarrollo
+    container_name: autogestor-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # El navegador del usuario resuelve la API por el puerto publicado del
+      # equipo, no por el nombre de servicio de la red interna de Docker.
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api}
+      VITE_POLLING: "true"
+    ports:
+      - "${WEB_PUERTO_HOST:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - modulos_frontend:/app/node_modules
+
+  # El backend ya carga los datos iniciales al arrancar. Este servicio solo sirve
+  # para relanzar el seed a mano sin reiniciar la API:
+  #   docker compose run --rm seed
+  seed:
+    build:
+      context: ./backend
+      target: desarrollo
+    profiles: ["herramientas"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-autogestor_dms}
+      DB_USER: ${DB_USER:-autogestor}
+      DB_PASSWORD: ${DB_PASSWORD:-autogestor}
+    volumes:
+      - ./backend:/app
+      - modulos_backend:/app/node_modules
+    command: ["npm", "run", "seed"]
+
+volumes:
+  datos_mysql:
+  modulos_backend:
+  modulos_frontend:
+  fotos_vehiculos:
